@@ -3,10 +3,27 @@ import pandas as pd
 import numpy as np
 import sys
 
+import torch as th
 
+ #'Disease::DOID:2841' #- ashtma
+
+# Rare disease, Mantle cell lymphoma. Associated with translocation in CCND1. Treated with chemotherapy and antibodies 
+# https://www.orpha.net/consor/cgi-bin/Disease_Search.php?lng=EN&data_id=10693&MISSING%20CONTENT=Mantle-cell-lymphoma&search=Disease_Search_Simple&title=Mantle%20cell%20lymphoma
+#3 TOP RESULS DB09107 - Methoxy polyethylene glycol-epoetin beta, stimulates blood cells
+#../DRKG/drkg.tsv:Compound::DB09107	DRUGBANK::target::Compound:Gene	Gene::2057 - Erythropoietin receptor;
+#../DRKG/drkg.tsv:Compound::DB09107	DRUGBANK::treats::Compound:Disease	Disease::MESH:D000740 - anemia
+
+
+#./DRKG/drkg.tsv:Compound::DB00188	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
+#../DRKG/drkg.tsv:Compound::DB00480	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
+#../DRKG/drkg.tsv:Compound::DB09053	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
+#../DRKG/drkg.tsv:Compound::DB11703	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
+#../DRKG/drkg.tsv:Compound::DB15035	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
 disease_list = [
-'Disease::DOID:2841'
+    #"Disease::MESH:D020522"
+    'Disease::DOID:2841'
 ]
+
 ## Expand to all diseases
 drug_list = []
 infer_path='biotects_withID' #'../DRKG/drugbank_info/drugbank_biotech.txt'
@@ -45,7 +62,6 @@ for disease in disease_list:
 
 treatment_rid = [relation_map[treat]  for treat in treatment]
 
-import torch as th
 entity_emb = np.load('/Users/stevensmith/Projects/DRKG/embed/DRKG_TransE_l2_entity.npy')
 rel_emb = np.load('/Users/stevensmith/Projects/DRKG/embed/DRKG_TransE_l2_relation.npy')
 
@@ -64,13 +80,24 @@ def transE_l2(head, rel, tail):
     score = head + rel - tail
     return gamma - th.norm(score, p=2, dim=-1)
 
+def transE_l2_ng(head, rel, tail):
+    score = head + rel - tail
+    return th.norm(score, p=2, dim=-1)
+
+
 scores_per_disease = []
 dids = []
 for rid in range(len(treatment_embs)):
     treatment_emb=treatment_embs[rid]
     for disease_id in disease_ids:
         disease_emb = entity_emb[disease_id]
+        #print("indexes:\nrid:{}\ndiseaseid:{}\n".format(rid,disease_id))
+        #print("shapes:\ndrug: {}\ntreatment:{}\ndisease:{}\n".format(drug_emb.shape, treatment_emb.shape, disease_emb.shape))
+        print("drug_emb:\n{}\nTreatment_emb:{}\ndisease_emb:{}\n".format(drug_emb, treatment_emb, disease_emb))
+        print("raw_score={}\nth.norm={}\n".format(drug_emb+treatment_emb-disease_emb,th.norm(drug_emb+treatment_emb-disease_emb,p=2, dim=-1)))
+
         score = fn.logsigmoid(transE_l2(drug_emb, treatment_emb, disease_emb))
+        #print("thnorm score:\n{}\ngamma-thnorm\n{}\nlogsignmoid".format(transE_l2_ng(drug_emb, treatment_emb, disease_emb),transE_l2(drug_emb, treatment_emb, disease_emb),score))
         scores_per_disease.append(score)
         dids.append(drug_ids)
 scores = th.cat(scores_per_disease)
@@ -81,7 +108,7 @@ dids = dids[idx].numpy()
 
 _, unique_indices = np.unique(dids, return_index=True)
 
-topk=100
+topk=737
 topk_indices = np.sort(unique_indices)[:topk]
 proposed_dids = dids[topk_indices]
 proposed_scores = scores[topk_indices]
