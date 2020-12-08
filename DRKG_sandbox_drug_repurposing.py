@@ -5,6 +5,8 @@ import sys
 
 import torch as th
 
+edge_list=sys.argv[1]
+drug_path=sys.argv[2]
  #'Disease::DOID:2841' #- ashtma
 
 # Rare disease, Mantle cell lymphoma. Associated with translocation in CCND1. Treated with chemotherapy and antibodies 
@@ -20,21 +22,42 @@ import torch as th
 #../DRKG/drkg.tsv:Compound::DB11703	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
 #../DRKG/drkg.tsv:Compound::DB15035	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
 disease_list = [
+    edge_list
     #"Disease::MESH:D020522"
-    'Disease::DOID:2841'
+    #'Disease::DOID:2841'
 ]
 
 ## Expand to all diseases
 drug_list = []
-infer_path='biotects_withID' #'../DRKG/drugbank_info/drugbank_biotech.txt'
+#infer_path='genes.tsv' #'biotects_withID' #'../DRKG/drugbank_info/drugbank_biotech.txt'
+#infer_path='biotects_withID' #'../DRKG/drugbank_info/drugbank_biotech.txt'
+infer_path=drug_path #'/Users/stevensmith/Projects/DRKG/drug_repurpose/infer_drug.tsv'
 ## curate list
 with open(infer_path,newline='',encoding='utf-8') as csvfile:
      reader=csv.DictReader(csvfile,delimiter='\t',fieldnames=['drug','ids'])
      for row_val in reader:
           drug_list.append(row_val['drug'])
 
-treatment = ['Hetionet::CtD::Compound:Disease','GNBR::T::Compound:Disease']
-
+#treatment = ['Hetionet::CtD::Compound:Disease']#,'GNBR::T::Compound:Disease']
+#treatment = ['DRUGBANK::treats::Compound:Disease']
+#treatment = ['GNBR::T::Compound:Disease']
+#treatment = ['GNBR::D::Gene:Disease']
+treatment = ['DRUGBANK::treats::Compound:Disease',
+'GNBR::T::Compound:Disease',
+'Hetionet::CtD::Compound:Disease']
+#treatment = ['GNBR::D::Gene:Disease',
+#'GNBR::G::Gene:Disease',
+#'GNBR::J::Gene:Disease',
+#'GNBR::L::Gene:Disease',
+#'GNBR::Md::Gene:Disease',
+#'GNBR::Te::Gene:Disease',
+#'GNBR::U::Gene:Disease',
+#'GNBR::Ud::Gene:Disease',
+#'GNBR::X::Gene:Disease',
+#'GNBR::Y::Gene:Disease',
+#'Hetionet::DdG::Disease:Gene',
+#'Hetionet::DaG::Disease:Gene',
+#'Hetionet::DuG::Disease:Gene']
 ## are these all the combos?
 
 entity_idmap_file = '/Users/stevensmith/Projects/DRKG/embed/entities.tsv'
@@ -93,8 +116,8 @@ for rid in range(len(treatment_embs)):
         disease_emb = entity_emb[disease_id]
         #print("indexes:\nrid:{}\ndiseaseid:{}\n".format(rid,disease_id))
         #print("shapes:\ndrug: {}\ntreatment:{}\ndisease:{}\n".format(drug_emb.shape, treatment_emb.shape, disease_emb.shape))
-        print("drug_emb:\n{}\nTreatment_emb:{}\ndisease_emb:{}\n".format(drug_emb, treatment_emb, disease_emb))
-        print("raw_score={}\nth.norm={}\n".format(drug_emb+treatment_emb-disease_emb,th.norm(drug_emb+treatment_emb-disease_emb,p=2, dim=-1)))
+        #print("drug_emb:\n{}\nTreatment_emb:{}\ndisease_emb:{}\n".format(drug_emb, treatment_emb, disease_emb))
+        #print("raw_score={}\nth.norm={}\n".format(drug_emb+treatment_emb-disease_emb,th.norm(drug_emb+treatment_emb-disease_emb,p=2, dim=-1)))
 
         score = fn.logsigmoid(transE_l2(drug_emb, treatment_emb, disease_emb))
         #print("thnorm score:\n{}\ngamma-thnorm\n{}\nlogsignmoid".format(transE_l2_ng(drug_emb, treatment_emb, disease_emb),transE_l2(drug_emb, treatment_emb, disease_emb),score))
@@ -108,7 +131,7 @@ dids = dids[idx].numpy()
 
 _, unique_indices = np.unique(dids, return_index=True)
 
-topk=737
+topk=100
 topk_indices = np.sort(unique_indices)[:topk]
 proposed_dids = dids[topk_indices]
 proposed_scores = scores[topk_indices]
