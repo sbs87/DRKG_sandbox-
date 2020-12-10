@@ -5,8 +5,9 @@ import sys
 
 import torch as th
 
-edge_list=sys.argv[1]
-drug_path=sys.argv[2]
+node1=sys.argv[1]
+edge_list=sys.argv[2]
+drug_path=sys.argv[3]
  #'Disease::DOID:2841' #- ashtma
 
 # Rare disease, Mantle cell lymphoma. Associated with translocation in CCND1. Treated with chemotherapy and antibodies 
@@ -22,7 +23,7 @@ drug_path=sys.argv[2]
 #../DRKG/drkg.tsv:Compound::DB11703	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
 #../DRKG/drkg.tsv:Compound::DB15035	DRUGBANK::treats::Compound:Disease	Disease::MESH:D020522
 disease_list = [
-    edge_list
+    node1
     #"Disease::MESH:D020522"
     #'Disease::DOID:2841'
 ]
@@ -38,13 +39,15 @@ with open(infer_path,newline='',encoding='utf-8') as csvfile:
      for row_val in reader:
           drug_list.append(row_val['drug'])
 
+
+treatment=[edge_list]
 #treatment = ['Hetionet::CtD::Compound:Disease']#,'GNBR::T::Compound:Disease']
 #treatment = ['DRUGBANK::treats::Compound:Disease']
 #treatment = ['GNBR::T::Compound:Disease']
 #treatment = ['GNBR::D::Gene:Disease']
-treatment = ['DRUGBANK::treats::Compound:Disease',
-'GNBR::T::Compound:Disease',
-'Hetionet::CtD::Compound:Disease']
+#treatment = ['DRUGBANK::treats::Compound:Disease',
+#'GNBR::T::Compound:Disease',
+#'Hetionet::CtD::Compound:Disease']
 #treatment = ['GNBR::D::Gene:Disease',
 #'GNBR::G::Gene:Disease',
 #'GNBR::J::Gene:Disease',
@@ -140,3 +143,10 @@ for i in range(topk):
     score = proposed_scores[i]
     
     print("{}\t{}".format(entity_id_map[drug], score))
+
+
+#1. Generate scores for x edges for y disease 
+#2. widen dataset
+
+#tSIne of embeddings for 
+
