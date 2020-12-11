@@ -17,13 +17,13 @@ TODO:
 
 def main():
 
-     tree = ET.parse("/home/ssmith35/projects/OD_orhpandisease/en_product6.xml")
+     tree = ET.parse("/Users/stevensmith/Projects/DRKG_sandbox-/en_product1.xml")
      root = tree.getroot()
 
 
      # open a file for writing
 
-     parsed_xml = open('/home/ssmith35/projects/OD_orhpandisease/OD_1/en_product6.csv', 'w')
+     parsed_xml = open('/Users/stevensmith/Projects/DRKG_sandbox-/en_product1.csv', 'w')
 
      # create the csv writer object
 
@@ -57,36 +57,48 @@ def main():
              disorder_id=disorder.attrib['id']
              disorder_name=disorder.find('Name').text
              disorder_orphacode=disorder.find('OrphaCode').text
-             for DisorderGeneAssociationList in disorder.findall('DisorderGeneAssociationList'):
-                 for DisorderGeneAssociation in DisorderGeneAssociationList.findall('DisorderGeneAssociation'):
-                     for Gene in DisorderGeneAssociation.findall('Gene'):
-                         gene_id=Gene.attrib['id']
-                         gene_symbol=Gene.find('Symbol').text  # assumes only one tag called NameSymbol under DisorderGeneAssociation
-                         gene_name=Gene.find('Name').text # assumes only one tag called Name under DisorderGeneAssociation
+             #print("{}\t{}\t{}".format(disorder_id,disorder_name,disorder_orphacode))
+             for DisorderGeneAssociationList in disorder.findall('ExternalReferenceList'):
+                 for DisorderGeneAssociation in DisorderGeneAssociationList.findall('ExternalReference'):
+                    s_r_i={disorder_id:{'source':'','ref':''}}
+                    for E in DisorderGeneAssociation:
+                         if E.tag=="Source":
+                              s_r_i[disorder_id]['source']=E.text
+                         elif E.tag=="Reference":
+                              s_r_i[disorder_id]['ref']=E.text
+                    #print(DisorderGeneAssociation.attrib['id'])
+                    #disorder_name=DisorderGeneAssociation.find('Name').text
+                    #disorder_orphacode=DisorderGeneAssociation.find('OrphaCode').text
+                     #for Gene in DisorderGeneAssociation.findall('Source'):
+                      #   print(Gene.text)
+                       #  gene_id=Gene.attrib['id']
+                        # gene_symbol=Gene.find('Symbol').text  # assumes only one tag called NameSymbol under DisorderGeneAssociation
+                         #gene_name=Gene.find('Name').text # assumes only one tag called Name under DisorderGeneAssociation
 
                          # traverse ExternalReferenceList for each gene's OMIM source
-                         omim_source='NOT_FOUND' # initialize in case no OMIM record exists
-                         for ExternalReferenceList in Gene.findall('ExternalReferenceList'):
-                              for ExternalReference in ExternalReferenceList.findall('ExternalReference'):
-                                   ExternalReference_id=ExternalReference.attrib['id']
+                    omim_source='NOT_FOUND' # initialize in case no OMIM record exists
+                    #  for ExternalReferenceList in DisorderGeneAssociation.findall('ExternalReferenceList'):
+                    #      for ExternalReference in ExternalReferenceList.findall('ExternalReference'):
+                    #           print(ExternalReference)
+                    #           ExternalReference_id=ExternalReference.attrib['id']
                                    
-                                   # Next part is tricky/sloppy. XML structure is such that source/ref aren't as key/value.
-                                   # Instead, they are both values to to the ExternalReference ID
-                                   # Store each of these as a dict within the ExternalRefID, then extract later
-                                   s_r_i={ExternalReference_id:{'source':'','ref':''}}
-                                   for E in ExternalReference:
-                                        if E.tag=="Source":
-                                             s_r_i[ExternalReference_id]['source']=E.text
-                                        elif E.tag=="Reference":
-                                             s_r_i[ExternalReference_id]['ref']=E.text
-                                        else:
-                                             print('none') #Should only be two tags under ExternalReference, but just in case
-                                   # Only want OMIM source ID. Note in future, can extract all external ref IDs
-                                   for source_ref_values in s_r_i.values():
-                                        if source_ref_values['source']=='OMIM':
-                                             omim_source=source_ref_values['ref']
-                         # Write at minium Orphanet code, Gene symbol and OMIM source to file
-                         csvwriter.writerow([str(disorder_id),str(disorder_orphacode),disorder_name,str(gene_id),gene_symbol,gene_name,omim_source])
+                    #                # Next part is tricky/sloppy. XML structure is such that source/ref aren't as key/value.
+                    #                # Instead, they are both values to to the ExternalReference ID
+                    #                # Store each of these as a dict within the ExternalRefID, then extract later
+                    #           s_r_i={ExternalReference_id:{'source':'','ref':''}}
+                    #           for E in ExternalReference:
+                    #                if E.tag=="Source":
+                    #                     s_r_i[ExternalReference_id]['source']=E.text
+                    #                elif E.tag=="Reference":
+                    #                     s_r_i[ExternalReference_id]['ref']=E.text
+                    #                else:
+                    #                     print('none') #Should only be two tags under ExternalReference, but just in case
+                    #                # Only want OMIM source ID. Note in future, can extract all external ref IDs
+                    for source_ref_values in s_r_i.values():
+                         if source_ref_values['source']=='MeSH':
+                              omim_source=source_ref_values['ref']
+                    #      # Write at minium Orphanet code, Gene symbol and OMIM source to file
+                    csvwriter.writerow([str(disorder_id),str(disorder_orphacode),disorder_name,omim_source])
                              
 
 if __name__ == "__main__":
